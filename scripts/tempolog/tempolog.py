@@ -1,20 +1,30 @@
+#imports
 import requests
 import getpass as gp
+from cryptography.fernet import Fernet
+from requests.auth import HTTPBasicAuth
+
 
 local_user = gp.getuser()
-url= 'https://issues.feedzai.com/rest/api/2/user?username=' + local_user
-header = {'Content-Type':'application/json','Accept':'application/json'}
-payload = {'username' : local_user}
+url_user = 'https://issues.feedzai.com/rest/api/2/user?username=' + local_user
+pw_loc = '/fz/info/jira_pw.txt'
+
+
+key = Fernet.generate_key()
+fernet = Fernet(key)
 
 def fetch_pass():
-    return open(r"/home/" + local_user + "/fz/info/jira_pw.txt").readlines()[0]
+    global pw
+    pw = fernet.encrypt(open(r"/home/" + local_user + pw_loc).readlines()[0].encode())
+
+fetch_pass()
+
+#session = requests.Session()
+#session.auth = (local_user, pw)
+#auth = session.post(url_user)
 
 
-#def fetch_work():
-#    return os.system('curl -s https://issues.feedzai.com/rest/api/2/user?username=' + local_user + ' -H content-type: application/json -u ' + local_user + ':' + pass_user + ' > /dev/null 2>&1')
 
-print(local_user, fetch_pass())
-r = requests.get(url, headers={"content-type":"json"}, auth=(local_user, fetch_pass))
+r = requests.get(url_user, headers={'content-type: application/json'}, auth=(local_user, fernet.decrypt(pw).decode()))
 
-print(r.url)
-print(r.status_code)
+#curl -s https://issues.feedzai.com/rest/api/2/user?username=joao.pereira -H content-type: application/json -u joao.pereira:password 
